@@ -20,11 +20,24 @@ public class ServerC {
         }
         fileInputStream.close();
     }
+    
+    private static void receiveFile(String fileName) throws Exception {
+        int bytes = 0;
+        FileOutputStream fileOutputStream = new FileOutputStream(fileName);
 
-    static void printMenu(){
-        System.out.println("Press 1 to enter a message");
+        long size = din.readLong();
+        byte[] buffer = new byte[4 * 1024];
+        while (size > 0 && (bytes = din.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+            fileOutputStream.write(buffer, 0, bytes);
+            size -= bytes;
+        }
+        fileOutputStream.close();
+    }
+
+    private static void printMenu(){
+        System.out.println("\n\nPress 1 to enter a message");
         System.out.println("Press 2 to send a file");
-        System.out.println("Type 'STOP' to end the connection");
+        System.out.println("Type 'STOP' to end the connection\n\n");
     }
     public static void main(String args[])throws Exception{  
         ServerSocket ss=new ServerSocket(3333);  
@@ -37,11 +50,20 @@ public class ServerC {
         String str="",str2="";  
         while(true){
             str=din.readUTF();
+            String rec[] = str.split("\\|");
+            if (rec[0].trim().equalsIgnoreCase("1")) {
+                System.out.println("Client says: " + rec[1]);
+            } else if (rec[0].trim().equalsIgnoreCase("2")) {
+                System.out.println("File received. Downloading File..." + rec[1]);
+                String filePath = "E:\\Server\\" + rec[1];
+                receiveFile(filePath);
+                System.out.println("Downloading Complete....");
+            }
             if(str.trim().equalsIgnoreCase("stop")){
                 System.out.println("Connection ended with client");
                 break;
             }
-            System.out.println("client says: "+str);
+            // System.out.println("client says: "+str);
             printMenu();
             str2=br.readLine();
             if(str2.trim().equals("1")){
@@ -56,8 +78,11 @@ public class ServerC {
                 String filename = arr[arr.length-1];
                 dout.writeUTF("2|"+filename);
                 sendFile(str2);
+                System.out.println("File Sent");
             }else if(str2.trim().equalsIgnoreCase("STOP")){
                 dout.writeUTF("STOP");
+                System.out.println("Connection with client ended...");
+                break;
             }
             dout.flush(); 
         }  

@@ -3,7 +3,6 @@ import java.io.*;
 class MyClient {
     static DataOutputStream dout = null;
     static DataInputStream din = null;
-    static final int filesize = 1022386;
     public static void main(String args[]) throws Exception {
         Socket s = new Socket(InetAddress.getByName("localhost"), 3333);
         din = new DataInputStream(s.getInputStream());
@@ -11,12 +10,28 @@ class MyClient {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         String str = "", str2 = "";
         while (!str.equals("stop")) {
+            printMenu();
             str = br.readLine();
-            if (str.equalsIgnoreCase("stop")) {
+            if(str.trim().equals("1")){
+                System.out.print("Enter the message you want to send to the client: ");
+                str = "1|"+br.readLine();
+                dout.writeUTF(str);  
+            }else if(str.trim().equals("2")){
+                System.out.print("Enter the path of the file you want to send to the client: ");
+                str =br.readLine();
+                str = str.replace("\\" , "\\\\");
+                String arr[] = str.split("\\\\");
+                String filename = arr[arr.length-1];
+                dout.writeUTF("2|"+filename);
+                System.out.println("2|" + filename);
+                sendFile(str);
+            }
+            else if (str.equalsIgnoreCase("stop")) {
+                dout.writeUTF("stop");
                 System.out.println("Connection with server ended");
                 break;
             }
-            dout.writeUTF(str);
+            // dout.writeUTF(str);
             dout.flush();
             str2 = din.readUTF();
             if (str2.equalsIgnoreCase("stop")) {
@@ -27,10 +42,10 @@ class MyClient {
             if (arr[0].trim().equalsIgnoreCase("1")) {
                 System.out.println("Server says: " + arr[1]);
             } else if (arr[0].trim().equalsIgnoreCase("2")) {
-                System.out.println("File received. Downloading File..." + arr[1]);
-                String filePath = "E:\\"+arr[1];
+                System.out.println("File received. Downloading File...");
+                String filePath = "E:\\Client\\"+arr[1];
                 receiveFile(filePath);
-                System.out.println("Downloading Complete....");
+                System.out.println("Downloading Complete..... . File saved at "+filePath);
             }
         }
 
@@ -50,5 +65,28 @@ class MyClient {
             size -= bytes;
         }
         fileOutputStream.close();
+    }
+
+
+    private static void sendFile(String path) throws Exception {
+        int bytes = 0;
+        File file = new File(path);
+        FileInputStream fileInputStream = new FileInputStream(file);
+
+        dout.writeLong(file.length());
+
+        byte[] buffer = new byte[4 * 1024];
+
+        while ((bytes = fileInputStream.read(buffer)) != -1) {
+            dout.write(buffer, 0, bytes);
+            dout.flush();
+        }
+        fileInputStream.close();
+    }
+
+    static void printMenu() {
+        System.out.println("\n\nPress 1 to enter a message");
+        System.out.println("Press 2 to send a file");
+        System.out.println("Type 'STOP' to end the connection\n\n");
     }
 }
